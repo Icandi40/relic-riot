@@ -6,6 +6,8 @@ An original, responsive 3D online multiplayer arena game created by **Sheena Lin
 
 **[Play RELIC RIOT](https://icandi40.github.io/relic-riot/)** · [Source](https://github.com/Icandi40/relic-riot)
 
+![RELIC RIOT home screen](docs/screenshots/home.png)
+
 ## Play
 
 1. Open the live site on two or more devices.
@@ -78,9 +80,15 @@ The host has authority over their own simulation. This is a casual multiplayer s
 - [x] Rules and controls are explained in the game.
 - [x] Full round, score, results and rematch flow.
 - [x] Responsive computer and touch interfaces.
-- [ ] Public URL verification recorded after deployment.
+- [x] Public URL verification recorded after deployment.
 - [ ] A physical phone plus a computer on different networks remains a manual acceptance check unless separately recorded.
 
 ## Attribution
 
 Design and project direction: **Sheena Lindsey-Smith**. Original environment and runner artwork generated with the built-in image generation tool; original live geometry and game logic in this repository. Barlow Condensed and Rajdhani fonts are distributed through Fontsource under their included open font licenses. React, Three.js, PeerJS, Vite, Lucide and other dependencies retain their respective licenses.
+
+## Screenshots and submission
+
+![Live 3D arena](docs/screenshots/arena.png)
+
+See [HANDSHAKE-SUBMISSION.md](HANDSHAKE-SUBMISSION.md) for a ready-to-paste project description, and [docs/VERIFICATION.md](docs/VERIFICATION.md) for actual checks and remaining limits. On Windows, `START-GAME.cmd` starts local development from the correct project folder.

@@ -48,4 +48,14 @@ Above-the-fold copy was checked against DESIGN.md. Functional copy was extended 
 
 ## Public release
 
-Deployment URL and production verification are appended after GitHub Pages completes. Source and screenshots remain reproducible from the repository and test commands.
+**Live URL:** https://icandi40.github.io/relic-riot/
+
+**Source:** https://github.com/Icandi40/relic-riot
+
+GitHub Actions built and deployed release `d8dd099` successfully: https://github.com/Icandi40/relic-riot/actions/runs/44155712254.
+
+Both browser suites passed against the deployed site (40.5 seconds), including two independent browser contexts using actual internet signaling and WebRTC, match completion through advancing the real browser clock, and a successful rematch. A release query was used to bypass GitHub Pages' short HTML cache and verify the current deployed bundle. The normal public URL also loaded successfully. Native-size 1536 × 1024 capture, meaningful live content, no horizontal overflow, and a clean application console were verified with gstack. Actual renders were opened with view_image; the selected concept and final home capture were compared directly. No material unrecorded design mismatches remain; the intentional live-geometry and mobile-layout adaptations are described above and in DESIGN.md.
+
+An initial CDN request for a JavaScript chunk returned a transient 503 during propagation; reload recovered. The final HTML includes a visible loading/reload fallback so a failed asset load does not leave an unexplained empty page. A pulse-input race found during browser testing was fixed by latching discrete actions until the simulation tick; its regression test is part of the 11 passing rule tests.
+
+Public screenshots are in `docs/screenshots/`. Local and production verification artifacts used the same test flows; ephemeral browser traces are not committed.

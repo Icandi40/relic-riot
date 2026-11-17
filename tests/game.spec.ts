@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 const evidence = path.resolve(process.cwd(), "../../work/qa");
+const release = process.env.GAME_RELEASE
+  ? `release=${encodeURIComponent(process.env.GAME_RELEASE)}`
+  : "";
+const homePath = release ? `./?${release}` : "./";
 test("home, instructions, practice and responsive layout", async ({
   browser,
 }) => {
@@ -9,7 +13,7 @@ test("home, instructions, practice and responsive layout", async ({
   });
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("./");
+  await page.goto(homePath);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("RELIC");
   await page.screenshot({
     path: path.join(evidence, "home-desktop.png"),
@@ -78,12 +82,12 @@ test("two independent browsers join through internet signaling and play a real s
   const errors: string[] = [];
   host.on("pageerror", (e) => errors.push(e.message));
   guest.on("pageerror", (e) => errors.push(e.message));
-  await host.goto("./");
+  await host.goto(homePath);
   await host.getByLabel("YOUR CALLSIGN").fill("SHEENA");
   await host.getByRole("button", { name: "CREATE ROOM" }).click();
   await expect(host.getByTestId("room-code")).toBeVisible({ timeout: 25000 });
   const code = await host.getByTestId("room-code").innerText();
-  await guest.goto(`./?room=${code}`);
+  await guest.goto(`./?room=${code}${release ? `&${release}` : ""}`);
   await guest.getByLabel("YOUR CALLSIGN").fill("RIVAL");
   await guest.getByRole("button", { name: "JOIN", exact: true }).click();
   await expect(guest.getByTestId("room-code")).toHaveText(code, {
