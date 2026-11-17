@@ -12,7 +12,7 @@ The host publishes snapshots about 20 times per second. The 3D renderer interpol
 
 ## Why browser-hosted sessions
 
-The user's constraints prioritize finishing a polished playable game without paid upgrades. A browser host plus public signaling avoids provisioning a paid long-running server. It provides real remote multiplayer, with an explicit host-presence requirement. It does not provide global anti-cheat guarantees, host migration or universal NAT traversal. Those would require a managed relay and/or dedicated server, and are not disguised as completed features.
+The user's constraints prioritize finishing a polished playable game without paid upgrades. A browser host plus public signaling avoids provisioning a paid long-running server. It provides real remote multiplayer, with an explicit host-presence requirement. PeerJS's library-default STUN/TURN configuration is preserved, rather than reducing connectivity to STUN-only. It does not provide global anti-cheat guarantees, host migration or universal NAT traversal. Stronger guarantees require an application-controlled relay and/or dedicated server, and are not disguised as completed features.
 
 ## Rendering decisions
 

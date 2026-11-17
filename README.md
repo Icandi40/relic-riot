@@ -4,6 +4,8 @@
 
 An original, responsive 3D online multiplayer arena game created by **Sheena Lindsey-Smith** for Handshake's Create a Multiplayer Game mission.
 
+**[Play RELIC RIOT](https://icandi40.github.io/relic-riot/)** · [Source](https://github.com/Icandi40/relic-riot)
+
 ## Play
 
 1. Open the live site on two or more devices.
@@ -50,15 +52,15 @@ An existing Chromium executable can be selected with `PLAYWRIGHT_CHROMIUM_EXECUT
 
 ## Architecture
 
-| Layer | Implementation |
-|---|---|
-| Interface | React, TypeScript, semantic HTML, responsive CSS, Lucide icons |
+| Layer        | Implementation                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Interface    | React, TypeScript, semantic HTML, responsive CSS, Lucide icons                                                   |
 | 3D rendering | Three.js, original procedural temple and characters, real shadows, selective bloom, instanced stones and foliage |
-| Simulation | Fixed maximum movement step, wall-clock match timers, bounded inputs, host-owned state |
-| Transport | PeerJS cloud signaling and WebRTC data channels |
-| Audio | Small synthesized Web Audio cues, user-controlled |
-| Assets | Original generated temple artwork, cloudscape, runner portraits; optimized WebP; locally bundled fonts |
-| Delivery | Static Vite build; GitHub Pages deployment workflow |
+| Simulation   | Fixed maximum movement step, wall-clock match timers, bounded inputs, host-owned state                           |
+| Transport    | PeerJS cloud signaling and WebRTC data channels                                                                  |
+| Audio        | Small synthesized Web Audio cues, user-controlled                                                                |
+| Assets       | Original generated temple artwork, cloudscape, runner portraits; optimized WebP; locally bundled fonts           |
+| Delivery     | Static Vite build; GitHub Pages deployment workflow                                                              |
 
 See [DESIGN.md](DESIGN.md) for the locked visual direction and deliberate 3D adaptation, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for engineering decisions.
 
@@ -66,7 +68,7 @@ See [DESIGN.md](DESIGN.md) for the locked visual direction and deliberate 3D ada
 
 This release has **no paid model API, database or application server**. The host's browser runs each match, so **the host must keep the game tab open and active**. Leaving closes their room; host migration is outside this release. Use private invites rather than public matchmaking.
 
-PeerJS's public signaling service and the listed public STUN services are third-party dependencies, without an application-controlled availability guarantee. There is no TURN relay in this free deployment. Restrictive corporate networks or incompatible NATs can block direct connections; the interface explains recovery options. A managed signaling/relay deployment or dedicated authoritative game server is the next infrastructure improvement.
+PeerJS's public signaling service and its library-default STUN/TURN endpoints are third-party dependencies, without an application-controlled availability guarantee. No private TURN relay is provisioned. Restrictive corporate networks or unavailable relay services can block connections; the interface explains recovery options. An application-controlled signaling/relay deployment or dedicated authoritative game server is the next infrastructure improvement.
 
 The host has authority over their own simulation. This is a casual multiplayer showcase, not a cheat-resistant ranked service. Room codes are invitations rather than passwords. Callsigns are stored locally; this app does not add analytics or require player accounts. Connection services necessarily process connection metadata.
 

@@ -1,65 +1,138 @@
-import { test, expect } from '@playwright/test';
-import path from 'node:path';
-const evidence = path.resolve(process.cwd(), '../../work/qa');
-test('home, instructions, practice and responsive layout', async ({ browser }) => {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1024 } });
-  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/'); await expect(page.getByRole('heading', { level: 1 })).toContainText('RELIC');
-  await page.screenshot({ path: path.join(evidence, 'home-desktop.png'), animations: 'disabled' });
-  await page.getByRole('button', { name: 'HOW TO PLAY' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: /Choose VESPER/ }).click(); await expect(page.getByRole('button', { name: /Choose VESPER/ })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: /PRACTICE RUN/ }).click();
-  await expect(page.locator('.countdown-overlay')).toBeVisible();
-  await expect(page.locator('.countdown-overlay')).toHaveCount(0, { timeout: 12000 });
-  await expect(page.locator('canvas')).toBeVisible();
-  await page.keyboard.down('d'); await page.waitForTimeout(600); await page.keyboard.up('d'); await page.keyboard.press('Space');
-  await expect(page.locator('.pulse-button')).toHaveClass(/charging/);
-  await page.screenshot({ path: path.join(evidence, 'arena-desktop.png') });
-  await page.getByRole('button', { name: 'LEAVE ROOM', exact: true }).click(); await page.getByRole('alertdialog').getByRole('button', { name: 'LEAVE ROOM' }).click();
-  await expect(page.getByRole('button', { name: 'CREATE ROOM' })).toBeVisible();
+import { test, expect } from "@playwright/test";
+import path from "node:path";
+const evidence = path.resolve(process.cwd(), "../../work/qa");
+test("home, instructions, practice and responsive layout", async ({
+  browser,
+}) => {
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 1024 },
+  });
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("./");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("RELIC");
+  await page.screenshot({
+    path: path.join(evidence, "home-desktop.png"),
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "HOW TO PLAY" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: /Choose VESPER/ }).click();
+  await expect(
+    page.getByRole("button", { name: /Choose VESPER/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /PRACTICE RUN/ }).click();
+  await expect(page.locator(".countdown-overlay")).toBeVisible();
+  await expect(page.locator(".countdown-overlay")).toHaveCount(0, {
+    timeout: 12000,
+  });
+  await expect(page.locator("canvas")).toBeVisible();
+  await page.keyboard.down("d");
+  await page.waitForTimeout(600);
+  await page.keyboard.up("d");
+  await page.keyboard.press("Space");
+  await expect(page.locator(".pulse-button")).toHaveClass(/charging/);
+  await page.screenshot({ path: path.join(evidence, "arena-desktop.png") });
+  await page.getByRole("button", { name: "LEAVE ROOM", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "LEAVE ROOM" })
+    .click();
+  await expect(page.getByRole("button", { name: "CREATE ROOM" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('body')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
-  await page.screenshot({ path: path.join(evidence, 'home-mobile.png'), fullPage: true, animations: 'disabled' });
-  await page.getByRole('button', { name: /PRACTICE RUN/ }).click(); await expect(page.locator('.countdown-overlay')).toHaveCount(0, { timeout: 12000 });
-  await expect(page.locator('.touch-controls')).toBeVisible();
-  await page.screenshot({ path: path.join(evidence, 'arena-mobile.png') });
-  expect(errors).toEqual([]); await page.close();
+  await expect(page.locator("body")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await page.screenshot({
+    path: path.join(evidence, "home-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: /PRACTICE RUN/ }).click();
+  await expect(page.locator(".countdown-overlay")).toHaveCount(0, {
+    timeout: 12000,
+  });
+  await expect(page.locator(".touch-controls")).toBeVisible();
+  await page.screenshot({ path: path.join(evidence, "arena-mobile.png") });
+  expect(errors).toEqual([]);
+  await page.close();
 });
 
-test('two independent browsers join through internet signaling and play a real shared match', async ({ browser }) => {
-  const hostContext = await browser.newContext({ viewport: { width: 1440, height: 1024 } });
-  const guestContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const host = await hostContext.newPage(), guest = await guestContext.newPage();
+test("two independent browsers join through internet signaling and play a real shared match", async ({
+  browser,
+}) => {
+  const hostContext = await browser.newContext({
+    viewport: { width: 1440, height: 1024 },
+  });
+  const guestContext = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+  });
+  const host = await hostContext.newPage(),
+    guest = await guestContext.newPage();
   await host.clock.install();
-  const errors: string[] = []; host.on('pageerror', e => errors.push(e.message)); guest.on('pageerror', e => errors.push(e.message));
-  await host.goto('/'); await host.getByLabel('YOUR CALLSIGN').fill('SHEENA'); await host.getByRole('button', { name: 'CREATE ROOM' }).click();
-  await expect(host.getByTestId('room-code')).toBeVisible({ timeout: 25000 }); const code = await host.getByTestId('room-code').innerText();
-  await guest.goto(`/?room=${code}`); await guest.getByLabel('YOUR CALLSIGN').fill('RIVAL'); await guest.getByRole('button', { name: 'JOIN', exact: true }).click();
-  await expect(guest.getByTestId('room-code')).toHaveText(code, { timeout: 30000 });
-  await expect(host.locator('.crew-member:not(.empty)').filter({ hasText: 'RIVAL' })).toBeVisible();
-  await host.screenshot({ path: path.join(evidence, 'online-lobby.png') });
-  await host.getByRole('button', { name: 'I’M READY' }).click(); await guest.getByRole('button', { name: 'I’M READY' }).click();
-  await expect(host.getByRole('button', { name: 'START THE RIOT' })).toBeEnabled(); await host.getByRole('button', { name: 'START THE RIOT' }).click();
-  await expect(host.locator('.countdown-overlay')).toHaveCount(0, { timeout: 14000 }); await expect(guest.locator('.arena-mount canvas')).toBeVisible();
-  const label = guest.locator('.runner-label').filter({ hasText: 'SHEENA' }); const before = await label.getAttribute('style');
-  await host.keyboard.down('d'); await host.waitForTimeout(900); await host.keyboard.up('d');
-  await expect.poll(() => label.getAttribute('style')).not.toBe(before);
-  await guest.keyboard.press('Space'); await expect(guest.locator('.pulse-button')).toHaveClass(/charging/);
-  await guest.screenshot({ path: path.join(evidence, 'online-guest.png') });
-  await host.screenshot({ path: path.join(evidence, 'online-host.png') });
+  const errors: string[] = [];
+  host.on("pageerror", (e) => errors.push(e.message));
+  guest.on("pageerror", (e) => errors.push(e.message));
+  await host.goto("./");
+  await host.getByLabel("YOUR CALLSIGN").fill("SHEENA");
+  await host.getByRole("button", { name: "CREATE ROOM" }).click();
+  await expect(host.getByTestId("room-code")).toBeVisible({ timeout: 25000 });
+  const code = await host.getByTestId("room-code").innerText();
+  await guest.goto(`./?room=${code}`);
+  await guest.getByLabel("YOUR CALLSIGN").fill("RIVAL");
+  await guest.getByRole("button", { name: "JOIN", exact: true }).click();
+  await expect(guest.getByTestId("room-code")).toHaveText(code, {
+    timeout: 30000,
+  });
+  await expect(
+    host.locator(".crew-member:not(.empty)").filter({ hasText: "RIVAL" }),
+  ).toBeVisible();
+  await host.screenshot({ path: path.join(evidence, "online-lobby.png") });
+  await host.getByRole("button", { name: "I’M READY" }).click();
+  await guest.getByRole("button", { name: "I’M READY" }).click();
+  await expect(
+    host.getByRole("button", { name: "START THE RIOT" }),
+  ).toBeEnabled();
+  await host.getByRole("button", { name: "START THE RIOT" }).click();
+  await expect(host.locator(".countdown-overlay")).toHaveCount(0, {
+    timeout: 14000,
+  });
+  await expect(guest.locator(".arena-mount canvas")).toBeVisible();
+  const label = guest.locator(".runner-label").filter({ hasText: "SHEENA" });
+  const before = await label.getAttribute("style");
+  await host.keyboard.down("d");
+  await host.waitForTimeout(900);
+  await host.keyboard.up("d");
+  await expect.poll(() => label.getAttribute("style")).not.toBe(before);
+  await guest.keyboard.press("Space");
+  await expect(guest.locator(".pulse-button")).toHaveClass(/charging/);
+  await guest.screenshot({ path: path.join(evidence, "online-guest.png") });
+  await host.screenshot({ path: path.join(evidence, "online-host.png") });
   await host.clock.fastForward(185000);
-  await expect(host.locator('.results-panel')).toBeVisible();
-  await expect(guest.locator('.results-panel')).toBeVisible();
-  await host.screenshot({ path: path.join(evidence, 'results.png'), animations: 'disabled' });
-  await host.getByRole('button', { name: 'READY FOR A REMATCH' }).click();
-  await guest.getByRole('button', { name: 'READY FOR A REMATCH' }).click();
-  await expect(host.getByRole('button', { name: 'ONE MORE RIOT' })).toBeEnabled();
-  await host.getByRole('button', { name: 'ONE MORE RIOT' }).click();
-  await expect(host.locator('.countdown-overlay')).toBeVisible();
-  await expect(guest.locator('.countdown-overlay')).toBeVisible();
-  await hostContext.close(); await expect(guest.getByRole('alert')).toContainText(/host left|connection ended|host stopped responding/i, { timeout: 16000 });
-  expect(errors).toEqual([]); await guestContext.close();
+  await expect(host.locator(".results-panel")).toBeVisible();
+  await expect(guest.locator(".results-panel")).toBeVisible();
+  await host.screenshot({
+    path: path.join(evidence, "results.png"),
+    animations: "disabled",
+  });
+  await host.getByRole("button", { name: "READY FOR A REMATCH" }).click();
+  await guest.getByRole("button", { name: "READY FOR A REMATCH" }).click();
+  await expect(
+    host.getByRole("button", { name: "ONE MORE RIOT" }),
+  ).toBeEnabled();
+  await host.getByRole("button", { name: "ONE MORE RIOT" }).click();
+  await expect(host.locator(".countdown-overlay")).toBeVisible();
+  await expect(guest.locator(".countdown-overlay")).toBeVisible();
+  await hostContext.close();
+  await expect(guest.getByRole("alert")).toContainText(
+    /host left|connection ended|host stopped responding/i,
+    { timeout: 16000 },
+  );
+  expect(errors).toEqual([]);
+  await guestContext.close();
 });
