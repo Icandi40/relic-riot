@@ -14,11 +14,33 @@ The project still needs a separately recorded physical phone-and-computer check 
 
 ### Version 1.1 public release
 
-Deployment and final isolated public browser verification are pending at this checkpoint. The version 1.0 evidence below is retained as historical evidence, not substituted for the updated build.
+Runtime release `11b70f4` built and deployed successfully: https://github.com/Icandi40/relic-riot/actions/runs/44325295991.
+
+**All three browser suites passed against the deployed site in 4.3 minutes.** The online suite completed its real three-minute match, actual keyboard pickup and delivery, shared scores, optional Surge, accurate 50-shard winner reward, one-match career total, readiness and rematch, and friendly host-disconnect recovery. No application page errors occurred. The other suites verified desktop/mobile controls, challenge tiers, cosmetic purchases and persistence, and actual Royal, Gilded and Starlight rendering using the separately labeled local-save fixture.
+
+The production test used an isolated `work/e2e-public-11b70f4` output directory, resolving the earlier trace collision. A release query bypassed HTML cache for that run. The normal public URL was then independently verified with gstack: meaningful content, Mastery available, correct title, no horizontal overflow, clean error console and the expected production asset `index-_7ZsWV6D.js`. Public Mastery also passed 320px and 390px overflow checks. Final public screenshots are in `docs/screenshots/`; cosmetic test-save screenshots remain outside the repository.
+
+| Check                                                     | Result                                        |
+| --------------------------------------------------------- | --------------------------------------------- |
+| TypeScript, production build, formatting                  | Passed                                        |
+| Rule and career tests                                     | 27 passed locally and in CI                   |
+| Public browser suites                                     | 3 passed, 4.3 minutes                         |
+| Real internet signaling and WebRTC                        | Passed between independent contexts           |
+| Keyboard pickup/delivery and shared score                 | Passed                                        |
+| Surge option, readiness reset, warning and active HUD     | Passed                                        |
+| Recap, actual earned reward and career total              | Passed                                        |
+| Challenge claims, purchases, persistence, all three looks | Passed; isolated save fixture for purchase UI |
+| Rematch and host-disconnect handling                      | Passed                                        |
+| Phone viewport joystick movement and pulse                | Passed                                        |
+| Application page errors                                   | None in tested flows                          |
+| Production dependency audit                               | Zero vulnerabilities                          |
+| Physical devices on separate networks                     | Not performed in this session                 |
+
+The version 1.0 evidence below is retained as historical evidence, not substituted for the updated build.
 
 ## Version 1.0 — November 17, 2026
 
-## Checks completed locally
+### Checks completed locally
 
 | Check                                                      | Result                                      |
 | ---------------------------------------------------------- | ------------------------------------------- |
@@ -40,7 +62,7 @@ Deployment and final isolated public browser verification are pending at this ch
 
 The optional Browser plugin is absent from this session. Primary inspection used the required gstack browser, and automated multi-context regression tests used Playwright with the existing Chromium 1234 executable. No browser installation was required. Tests do not disable browser security.
 
-## Visual fidelity review
+### Visual fidelity review
 
 The original full-screen concept and rendered screenshots were opened with `view_image`. Desktop, mobile home, mobile arena, online host/guest and results were inspected. Native concept size is 1536 × 1024; initial implementation review used 1440 × 1024 and the final release also captures the native dimensions.
 
@@ -57,14 +79,14 @@ The original full-screen concept and rendered screenshots were opened with `view
 
 Above-the-fold copy was checked against DESIGN.md. Functional copy was extended for errors, accessibility and explicit practice-bot labeling. Runner names, optional helper copy, disabled join state and the title diamond are deliberate refinements rather than fake data.
 
-## Boundaries
+### Boundaries
 
 - Browser viewport emulation was tested; no physical phone on a different network has been independently tested in this session.
 - Public signaling and library-default STUN/TURN endpoints are third-party dependencies; restrictive NAT/firewalls or unavailable relay services can require a different network. No private TURN relay is provisioned.
 - Browser host must remain online and active. No host migration, ranked anti-cheat service or account system is claimed.
 - npm audit reports a picomatch ReDoS advisory through build-only development dependencies. The published static application contains none of those build tools. No patched picomatch release was available in the inspected npm catalog; no forced downgrade or unreviewed dependency patch was applied.
 
-## Public release
+### Public release
 
 **Live URL:** https://icandi40.github.io/relic-riot/
 
@@ -76,4 +98,4 @@ Both browser suites passed against the deployed site (40.5 seconds), including t
 
 An initial CDN request for a JavaScript chunk returned a transient 503 during propagation; reload recovered. The final HTML includes a visible loading/reload fallback so a failed asset load does not leave an unexplained empty page. A pulse-input race found during browser testing was fixed by latching discrete actions until the simulation tick; its regression test is part of the 11 passing rule tests.
 
-Public screenshots are in `docs/screenshots/`. Local and production verification artifacts used the same test flows; ephemeral browser traces are not committed.
+The current release's public screenshots are in `docs/screenshots/`. Local and production verification artifacts used the same test flows; ephemeral browser traces are not committed.
