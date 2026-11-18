@@ -39,6 +39,7 @@ export function Arena({
     minutes = Math.floor(time / 60),
     seconds = String(time % 60).padStart(2, "0");
   const playing = view.snapshot.phase === "playing";
+  const surgeActive = playing && view.snapshot.surge && time <= 30;
 
   useEffect(() => {
     if (!container.current) return;
@@ -91,8 +92,9 @@ export function Arena({
       if (document.querySelector('[role="dialog"], [role="alertdialog"]'))
         return;
       if (
-        (e.target as HTMLElement)?.matches("input, textarea, button") &&
-        e.key !== " "
+        (e.target as HTMLElement)?.matches("input, textarea") ||
+        ((e.target as HTMLElement)?.matches("button") &&
+          (e.key === " " || e.key === "Enter"))
       )
         return;
       const key = e.key.toLowerCase();
@@ -207,15 +209,21 @@ export function Arena({
           localId={view.localId}
           carrier={view.snapshot.carrier}
         />
-        <div className={`match-clock ${time <= 30 ? "urgent" : ""}`}>
+        <div
+          className={`match-clock ${time <= 30 ? "urgent" : ""} ${surgeActive ? "surge-active" : ""}`}
+        >
           <span>{view.practice ? "PRACTICE" : "THE SKY TEMPLE"}</span>
           <strong>
             {minutes}:{seconds}
           </strong>
           <small>
-            {view.practice
-              ? "WITH ECHO BOT"
-              : `${view.snapshot.players.length} RUNNERS`}
+            {surgeActive
+              ? "RELIC SURGE · 2× POINTS"
+              : view.snapshot.surge && playing && time <= 40
+                ? `SURGE IN ${time - 30}s`
+                : view.practice
+                  ? "WITH ECHO BOT"
+                  : `${view.snapshot.players.length} RUNNERS`}
           </small>
         </div>
       </div>

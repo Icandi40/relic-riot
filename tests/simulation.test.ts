@@ -150,3 +150,168 @@ test("a pulse press survives later movement packets until the simulation consume
   s.step(1 / 60);
   assert.equal(s.state.events.filter((e) => e.kind === "pulse").length, 1);
 });
+test("round statistics track pickups, actual steals, successful pulses and carry streaks", () => {
+  const s = match();
+  const [a, b] = s.state.players;
+  a.x = 0;
+  a.z = 0;
+  b.x = 2;
+  b.z = 0;
+  s.step(0.02);
+  assert.equal(a.stats.pickups, 1);
+  s.step(0.5);
+  assert.equal(a.stats.carrySeconds, 0.5);
+  s.input("b", { pulse: true });
+  s.step(0.02);
+  assert.equal(b.stats.pulses, 1);
+  assert.equal(b.stats.pulseHits, 1);
+  assert.equal(b.stats.steals, 1);
+  assert.equal(a.stats.longestCarry, 0.52);
+  s.step(4);
+  s.input("b", { pulse: true });
+  b.x = 8;
+  b.z = 0;
+  s.step(0.02);
+  assert.equal(b.stats.pulses, 2);
+  assert.equal(b.stats.pulseHits, 1);
+  assert.equal(b.stats.steals, 1);
+});
+test("one pulse hitting several rivals counts as one successful pulse", () => {
+  const s = new Simulation();
+  for (let i = 0; i < 3; i++) {
+    s.addPlayer(String(i), "RUNNER", i);
+    s.setReady(String(i), true);
+  }
+  s.start();
+  s.step(3);
+  s.state.players.forEach((p, i) => {
+    p.x = i * 0.8;
+    p.z = 0;
+  });
+  s.input("0", { pulse: true });
+  s.step(0.02);
+  assert.equal(s.state.players[0].stats.pulses, 1);
+  assert.equal(s.state.players[0].stats.pulseHits, 1);
+});
+test("delivery statistics are independent of double points; classic and surge boundary are deterministic", () => {
+  for (const [surge, time, points] of [
+    [false, 20, 1],
+    [true, 31, 1],
+    [true, 30.01, 2],
+  ] as const) {
+    const s = match();
+    s.state.surge = surge;
+    const a = s.state.players[0];
+    a.x = 0;
+    a.z = 0;
+    s.step(0.02);
+    a.x = SHRINES[0].x;
+    a.z = SHRINES[0].z;
+    s.state.time = time;
+    s.step(0.02);
+    assert.equal(a.score, points);
+    assert.equal(a.stats.deliveries, 1);
+    assert.ok(Math.abs(a.stats.firstDelivery! - (180 - time + 0.02)) < 0.00001);
+  }
+  const s = match(),
+    a = s.state.players[0];
+  s.state.carrier = a.id;
+  a.x = 0;
+  a.z = -7.6;
+  s.state.time = 0.01;
+  s.step(0.02);
+  assert.equal(a.score, 0);
+  assert.equal(s.state.phase, "finished");
+});
+test("changing the lobby mode resets readiness; a live round locks mode and resets counters on rematch", () => {
+  const s = new Simulation();
+  s.addPlayer("a", "A", 0);
+  s.addPlayer("b", "B", 1);
+  s.setReady("a", true);
+  s.setReady("b", true);
+  s.setSurge(true);
+  assert.ok(s.state.players.every((p) => !p.ready));
+  assert.equal(s.start(), false);
+  s.setReady("a", true);
+  s.setReady("b", true);
+  s.start();
+  const id = s.state.matchId;
+  assert.equal(s.setSurge(false), false);
+  assert.equal(s.state.surge, true);
+  s.step(3);
+  s.state.players[0].stats.deliveries = 4;
+  s.step(180);
+  s.setReady("a", true);
+  s.setReady("b", true);
+  s.start();
+  assert.notEqual(s.state.matchId, id);
+  assert.equal(s.state.players[0].stats.deliveries, 0);
+});
+test("quick messages bind identity, accept only presets, rate limit and keep a bounded history", () => {
+  const s = new Simulation();
+  s.addPlayer("a", "SHEENA", 0);
+  assert.equal(s.message("unknown", "gg"), false);
+  assert.equal(s.message("a", "__proto__"), false);
+  assert.equal(s.message("a", "<script>"), false);
+  assert.equal(s.message("a", "gg"), true);
+  assert.equal(s.message("a", "ready"), false);
+  assert.equal(s.state.messages[0].name, "SHEENA");
+  assert.equal(s.state.messages[0].text, "GG!");
+  for (let i = 0; i < 12; i++) {
+    s.step(2);
+    assert.equal(s.message("a", "nice"), true);
+  }
+  assert.equal(s.state.messages.length, 8);
+});
+test("late arrivals cannot collect rewards for a completed match", () => {
+  const s = match();
+  s.step(180);
+  assert.equal(s.state.phase, "finished");
+  assert.equal(s.addPlayer("late", "LATE", 2), true);
+  assert.equal(s.state.phase, "lobby");
+  assert.equal(s.state.matchId, "");
+  assert.ok(s.state.players.every((p) => !p.ready));
+});
+test("cosmetics never change movement or pulse mechanics", () => {
+  const s = new Simulation();
+  s.addPlayer("a", "A", 0, false, "royal");
+  s.addPlayer("b", "B", 1, false, "gilded");
+  s.addPlayer("c", "C", 2, false, "starlight");
+  s.addPlayer("d", "D", 3, false, "injected");
+  assert.equal(s.state.players[3].cosmetic, "classic");
+  s.state.players.forEach((p) => s.setReady(p.id, true));
+  s.start();
+  s.step(3);
+  s.state.players.forEach((p, i) => {
+    p.x = -6 + i * 4;
+    p.z = 5;
+    s.input(p.id, { x: 0, z: 1, pulse: true });
+  });
+  s.step(0.05);
+  s.state.players.forEach((p) => {
+    assert.ok(Math.abs(p.z - 5 - 0.27) < 0.0001);
+    assert.equal(p.cooldown, 3.5);
+  });
+});
+test("fresh input after a stalled frame remains usable while genuinely stale packets expire", () => {
+  let now = 0;
+  const s = new Simulation(() => now);
+  s.addPlayer("a", "A", 0);
+  s.addPlayer("b", "B", 1);
+  s.setReady("a", true);
+  s.setReady("b", true);
+  s.start();
+  now = 3;
+  s.step(3);
+  const a = s.state.players[0];
+  a.x = 0;
+  a.z = 5;
+  now = 3.01; // input arrives, then rendering blocks before the next tick
+  s.input("a", { x: 1, z: 0 });
+  now = 4;
+  s.step(1);
+  assert.equal(a.x, 0.27); // fresh packet, bounded 50ms displacement
+  now = 5;
+  s.step(1);
+  assert.equal(a.x, 0.27); // no new packet, no movement
+});

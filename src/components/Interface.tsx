@@ -21,9 +21,11 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { RUNNERS } from "../game/types";
+import { RUNNERS, roundPlayers } from "../game/types";
 import type { SessionView } from "../game/network";
-import type { Player } from "../game/types";
+import type { Player, MessageKey } from "../game/types";
+import { RoundRecap } from "./RoundRecap";
+import { Comms } from "./Comms";
 
 export function Portrait({
   color,
@@ -59,18 +61,35 @@ export function Header({
   onHelp,
   onHome,
   playing,
+  shards,
+  onMastery,
 }: {
   sound: boolean;
   toggleSound: () => void;
   onHelp: () => void;
   onHome: () => void;
   playing: boolean;
+  shards: number;
+  onMastery: () => void;
 }) {
   return (
     <header className={`header ${playing ? "header-playing" : ""}`}>
       <Brand onClick={onHome} />
       <div className="header-actions">
-        <button className="outline help-button" onClick={onHelp}>
+        <button
+          className="outline mastery-button"
+          onClick={onMastery}
+          aria-label={`Open mastery, ${shards} Relic Shards`}
+        >
+          <Sparkles size={17} />
+          <span>MASTERY</span>
+          <b>{shards} ◆</b>
+        </button>
+        <button
+          className="outline help-button"
+          onClick={onHelp}
+          aria-label="HOW TO PLAY"
+        >
           <HelpCircle size={17} />
           <span>HOW TO PLAY</span>
         </button>
@@ -283,6 +302,8 @@ export function Lobby({
   onLeave,
   copied,
   copyInvite,
+  onSurge,
+  onMessage,
 }: {
   view: SessionView;
   onReady: () => void;
@@ -290,6 +311,8 @@ export function Lobby({
   onLeave: () => void;
   copied: boolean;
   copyInvite: () => void;
+  onSurge: (enabled: boolean) => void;
+  onMessage: (key: MessageKey) => void;
 }) {
   const me = view.snapshot.players.find((p) => p.id === view.localId)!;
   const canStart =
@@ -365,6 +388,28 @@ export function Lobby({
             );
           })}
         </div>
+        <label
+          className={`surge-setting ${view.snapshot.surge ? "enabled" : ""}`}
+        >
+          <input
+            type="checkbox"
+            checked={view.snapshot.surge}
+            disabled={!view.isHost}
+            onChange={(e) => onSurge(e.target.checked)}
+          />
+          <Zap size={19} />
+          <span>
+            <strong>
+              RELIC SURGE <small>OPTIONAL MODE</small>
+            </strong>
+            <span>
+              Double points in the final 30 seconds.{" "}
+              {view.isHost
+                ? "Changing this resets ready status."
+                : "The host chooses before the round."}
+            </span>
+          </span>
+        </label>
         <div className="lobby-buttons">
           <button
             className={
@@ -401,6 +446,7 @@ export function Lobby({
           <Shield size={14} />
           The host keeps this room running. Keep their game tab open.
         </p>
+        <Comms view={view} onSend={onMessage} />
       </section>
       <div className="lobby-art-caption">
         <Diamond />
@@ -553,6 +599,15 @@ export function Help({ onClose }: { onClose: () => void }) {
             </span>
           </div>
         </div>
+        <p className="help-surge">
+          <Zap size={17} />
+          <span>
+            <strong>OPTIONAL: RELIC SURGE</strong>The host can enable this in
+            the lobby. Each delivery in the final 30 seconds earns 2 points.
+            Classic mode always awards 1 point. Most points wins; tied leaders
+            share a draw.
+          </span>
+        </p>
         <p className="help-network">
           <Link size={15} />
           Create a room and share its code or invite link. Keep the host’s game
@@ -573,16 +628,24 @@ export function Results({
   onReady,
   onStart,
   onLeave,
+  onMastery,
+  onMessage,
 }: {
   view: SessionView;
   onReady: () => void;
   onStart: () => void;
   onLeave: () => void;
+  onMastery: () => void;
+  onMessage: (key: MessageKey) => void;
 }) {
-  const sorted = [...view.snapshot.players].sort((a, b) => b.score - a.score);
+  const sorted = [...roundPlayers(view.snapshot)].sort(
+    (a, b) => b.score - a.score,
+  );
   const draw = sorted.length > 1 && sorted[0].score === sorted[1].score;
-  const me = sorted.find((p) => p.id === view.localId)!;
-  const canStart = view.snapshot.players.every((p) => p.ready);
+  const me = view.snapshot.players.find((p) => p.id === view.localId)!;
+  const canStart =
+    view.snapshot.players.length >= 2 &&
+    view.snapshot.players.every((p) => p.ready);
   return (
     <div className="results-backdrop">
       <section className="results-panel">
@@ -613,12 +676,18 @@ export function Results({
               </strong>
               <span>
                 {p.score}
-                <small>{p.score === 1 ? "DELIVERY" : "DELIVERIES"}</small>
+                <small>{p.score === 1 ? "POINT" : "POINTS"}</small>
               </span>
-              {p.ready && <Check size={19} />}
+              {view.snapshot.players.find((active) => active.id === p.id)
+                ?.ready && <Check size={19} />}
+              {!view.snapshot.players.some((active) => active.id === p.id) && (
+                <small className="left-room">LEFT ROOM</small>
+              )}
             </div>
           ))}
         </div>
+        <RoundRecap view={view} />
+        <Comms view={view} onSend={onMessage} />
         <div className="results-actions">
           {!me.ready && (
             <button className="primary" onClick={onReady}>
@@ -640,6 +709,10 @@ export function Results({
           )}
           <button className="text-button" onClick={onLeave}>
             BACK TO HOME
+          </button>
+          <button className="outline" onClick={onMastery}>
+            <Sparkles size={16} />
+            VIEW MASTERY
           </button>
         </div>
       </section>

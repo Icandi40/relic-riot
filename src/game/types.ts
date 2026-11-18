@@ -6,6 +6,52 @@ export const RUNNERS = [
 ] as const;
 export type Phase = "lobby" | "countdown" | "playing" | "finished";
 export type Input = { x: number; z: number; pulse: boolean };
+export type RoundStats = {
+  deliveries: number;
+  pickups: number;
+  steals: number;
+  pulses: number;
+  pulseHits: number;
+  carrySeconds: number;
+  longestCarry: number;
+  firstDelivery: number | null;
+};
+export const emptyStats = (): RoundStats => ({
+  deliveries: 0,
+  pickups: 0,
+  steals: 0,
+  pulses: 0,
+  pulseHits: 0,
+  carrySeconds: 0,
+  longestCarry: 0,
+  firstDelivery: null,
+});
+export const COSMETIC_IDS = [
+  "classic",
+  "gilded",
+  "starlight",
+  "royal",
+] as const;
+export type CosmeticId = (typeof COSMETIC_IDS)[number];
+export const cleanCosmetic = (value: unknown): CosmeticId =>
+  COSMETIC_IDS.includes(value as CosmeticId)
+    ? (value as CosmeticId)
+    : "classic";
+export const QUICK_MESSAGES = {
+  ready: "Ready!",
+  nice: "Nice steal!",
+  gg: "GG!",
+  rematch: "One more round?",
+  wow: "Legendary!",
+} as const;
+export type MessageKey = keyof typeof QUICK_MESSAGES;
+export type RoomMessage = {
+  id: number;
+  playerId: string;
+  name: string;
+  text: string;
+  at: number;
+};
 export type Player = {
   id: string;
   name: string;
@@ -20,6 +66,8 @@ export type Player = {
   stunned: number;
   invincible: number;
   bot: boolean;
+  cosmetic: CosmeticId;
+  stats: RoundStats;
 };
 export type GameEvent = {
   id: number;
@@ -32,6 +80,7 @@ export type GameEvent = {
 export type Snapshot = {
   phase: Phase;
   players: Player[];
+  standings: Player[];
   carrier: string | null;
   relic: { x: number; z: number };
   shrine: number;
@@ -41,7 +90,12 @@ export type Snapshot = {
   pickupAt: number;
   events: GameEvent[];
   round: number;
+  matchId: string;
+  surge: boolean;
+  messages: RoomMessage[];
 };
+export const roundPlayers = (s: Snapshot) =>
+  s.phase === "finished" ? s.standings : s.players;
 export const ROUND_SECONDS = 180;
 export const ARENA_RADIUS = 10.15;
 export const PILLARS = [

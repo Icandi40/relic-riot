@@ -14,6 +14,7 @@ type RunnerModel = {
   ring: THREE.Mesh;
   position: THREE.Vector3;
   color: number;
+  trail: THREE.Points | null;
 };
 type Effect = {
   mesh: THREE.Mesh;
@@ -42,6 +43,9 @@ export class ArenaScene {
   private last = 0;
   private clock = 0;
   private seenEvent = 0;
+  private qualityFrames = 0;
+  private qualitySeconds = 0;
+  private performanceMode = false;
   private resize: ResizeObserver;
   private labels: HTMLDivElement;
   private labelNodes = new Map<string, HTMLDivElement>();
@@ -508,9 +512,13 @@ export class ArenaScene {
       body = new THREE.Group();
     root.add(body);
     const color = RUNNERS[p.color].color,
-      coat = this.material(color),
+      clothColor = p.cosmetic === "gilded" ? 0xdba54a : color,
+      coat = this.material(
+        clothColor,
+        p.cosmetic === "gilded" ? { metalness: 0.5, roughness: 0.3 } : {},
+      ),
       dark = this.material(0x27232f),
-      pale = this.material(0xffecd0),
+      pale = this.material(p.cosmetic === "gilded" ? 0xffd969 : 0xffecd0),
       trim = this.material(0xcda969, { metalness: 0.45 });
     // Faceted cloak, angular hood, inset mask, pauldrons, boots and satchel.
     const torso = this.mesh(
@@ -562,7 +570,7 @@ export class ArenaScene {
     }
     const cape = this.mesh(
       new THREE.ConeGeometry(0.49, 1.0, 5, 1, true),
-      this.material(color, { side: THREE.DoubleSide }),
+      this.material(clothColor, { side: THREE.DoubleSide }),
       0,
       0.82,
       0.19,
@@ -650,8 +658,61 @@ export class ArenaScene {
       root,
     );
     ring.rotation.x = -Math.PI / 2;
+    if (p.cosmetic === "royal") {
+      const crown = new THREE.Group();
+      crown.position.y = 2.02;
+      const gold = this.material(0xffd36c, {
+        metalness: 0.65,
+        roughness: 0.24,
+        emissive: 0x946125,
+        emissiveIntensity: 0.45,
+      });
+      const band = this.mesh(
+        new THREE.TorusGeometry(0.34, 0.045, 5, 16),
+        gold,
+        0,
+        0,
+        0,
+        crown,
+      );
+      band.rotation.x = Math.PI / 2;
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        this.mesh(
+          new THREE.ConeGeometry(0.065, 0.22, 4),
+          gold,
+          Math.sin(a) * 0.34,
+          0.1,
+          Math.cos(a) * 0.34,
+          crown,
+        );
+      }
+      body.add(crown);
+    }
     root.position.set(p.x, 0.3, p.z);
     this.scene.add(root);
+    let trail: THREE.Points | null = null;
+    if (p.cosmetic === "starlight") {
+      const positions = new Float32Array(27);
+      for (let i = 0; i < 9; i++) positions.set([p.x, 0.9, p.z], i * 3);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(positions, 3),
+      );
+      trail = new THREE.Points(
+        geometry,
+        new THREE.PointsMaterial({
+          color: 0xe2c4ff,
+          size: 0.14,
+          transparent: true,
+          opacity: 0.85,
+          depthWrite: false,
+        }),
+      );
+      trail.frustumCulled = false;
+      this.scene.add(trail);
+    }
     const model = {
       root,
       body,
@@ -660,10 +721,11 @@ export class ArenaScene {
       ring,
       position: root.position.clone(),
       color: p.color,
+      trail,
     };
     this.models.set(p.id, model);
     const label = document.createElement("div");
-    label.className = "runner-label";
+    label.className = `runner-label look-${p.cosmetic}`;
     label.textContent = p.name;
     label.style.setProperty("--runner", color);
     this.labels.appendChild(label);
@@ -674,12 +736,21 @@ export class ArenaScene {
   update(snapshot: Snapshot, localId: string) {
     this.state = snapshot;
     this.localId = localId;
-    for (const p of snapshot.players)
+    for (const p of snapshot.players) {
       if (!this.models.has(p.id)) this.createRunner(p);
+      // Read-only coordinates support deterministic browser input verification.
+      const label = this.labelNodes.get(p.id)!;
+      label.dataset.x = p.x.toFixed(3);
+      label.dataset.z = p.z.toFixed(3);
+    }
     for (const [id, model] of this.models)
       if (!snapshot.players.some((p) => p.id === id)) {
         this.disposeObject(model.root);
         this.scene.remove(model.root);
+        if (model.trail) {
+          this.disposeObject(model.trail);
+          this.scene.remove(model.trail);
+        }
         this.models.delete(id);
         this.labelNodes.get(id)?.remove();
         this.labelNodes.delete(id);
@@ -732,8 +803,29 @@ export class ArenaScene {
 
   private animate = (at: number) => {
     this.frame = requestAnimationFrame(this.animate);
-    const dt = Math.min((at - (this.last || at)) / 1000, 0.05);
+    const frameTime = (at - (this.last || at)) / 1000;
+    const dt = Math.min(frameTime, 0.05);
     this.last = at;
+    if (!this.performanceMode && frameTime > 0 && frameTime < 2) {
+      this.qualityFrames++;
+      this.qualitySeconds += frameTime;
+      if (this.qualityFrames >= 8 && this.qualitySeconds >= 2) {
+        if (this.qualitySeconds / this.qualityFrames > 0.055) {
+          // Preserve the arena and readable HTML HUD on weaker GPUs. Costly
+          // shadow maps and bloom are decorative, never gameplay information.
+          this.performanceMode = true;
+          const ratio = Math.min(window.devicePixelRatio, 0.75);
+          this.renderer.setPixelRatio(ratio);
+          this.composer.setPixelRatio(ratio);
+          this.renderer.shadowMap.enabled = false;
+          for (const pass of this.composer.passes)
+            if (pass instanceof UnrealBloomPass) pass.enabled = false;
+          this.renderer.domElement.dataset.quality = "performance";
+        }
+        this.qualityFrames = 0;
+        this.qualitySeconds = 0;
+      }
+    }
     this.clock += dt;
     const t = this.clock;
     if (this.state) {
@@ -745,6 +837,30 @@ export class ArenaScene {
           Math.min(1, dt * 20),
         );
         const moving = before.distanceTo(model.root.position) > 0.004;
+        if (model.trail) {
+          const positions = model.trail.geometry.getAttribute(
+            "position",
+          ) as THREE.BufferAttribute;
+          for (let i = 8; i > 0; i--) {
+            const blend = Math.min(1, dt * 14);
+            positions.setXYZ(
+              i,
+              positions.getX(i) +
+                (positions.getX(i - 1) - positions.getX(i)) * blend,
+              0.9 + Math.sin(t * 3 + i) * 0.08,
+              positions.getZ(i) +
+                (positions.getZ(i - 1) - positions.getZ(i)) * blend,
+            );
+          }
+          positions.setXYZ(
+            0,
+            model.root.position.x,
+            0.95,
+            model.root.position.z,
+          );
+          positions.needsUpdate = true;
+          model.trail.visible = !this.reducedMotion;
+        }
         const targetAngle = Math.atan2(-p.dx, -p.dz);
         model.body.rotation.y +=
           Math.atan2(
@@ -785,13 +901,31 @@ export class ArenaScene {
       this.relic.scale.setScalar(carrier ? 0.55 : 1);
       this.shrines.forEach((g, i) => {
         const active = i === this.state!.shrine;
+        const surge =
+          this.state!.surge &&
+          this.state!.time <= 30 &&
+          this.state!.phase === "playing";
         g.getObjectByName("ring")!.visible = active;
         g.getObjectByName("beacon")!.visible = active;
+        const ring = g.getObjectByName("ring") as THREE.Mesh<
+          THREE.TorusGeometry,
+          THREE.MeshStandardMaterial
+        >;
+        ring.material.emissive.set(surge ? 0xff4a35 : 0xffa31a);
+        ring.material.emissiveIntensity = surge ? 2.4 : 1.7;
+        const beacon = g.getObjectByName("beacon") as THREE.Mesh<
+          THREE.CylinderGeometry,
+          THREE.MeshBasicMaterial
+        >;
+        beacon.material.color.set(surge ? 0xff795a : 0xffbf4d);
+        beacon.material.opacity = surge ? 0.16 : 0.09;
         const surface = g.getObjectByName("surface") as THREE.Mesh<
           THREE.CylinderGeometry,
           THREE.MeshStandardMaterial
         >;
-        surface.material.emissive.set(active ? 0xff9f20 : 0x67406c);
+        surface.material.emissive.set(
+          active ? (surge ? 0xff4a35 : 0xff9f20) : 0x67406c,
+        );
         surface.material.emissiveIntensity = active ? 0.7 : 0.1;
       });
     }

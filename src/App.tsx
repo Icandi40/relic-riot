@@ -12,6 +12,16 @@ import {
   Results,
 } from "./components/Interface";
 import { Arena } from "./components/Arena";
+import { Mastery } from "./components/Mastery";
+import { Comms } from "./components/Comms";
+import {
+  claimGoal,
+  equip,
+  loadCareer,
+  purchase,
+  recordRound,
+  saveCareer,
+} from "./game/career";
 
 function saved(key: string, fallback: string) {
   try {
@@ -21,6 +31,9 @@ function saved(key: string, fallback: string) {
   }
 }
 export default function App() {
+  const [career, setCareer] = useState(loadCareer);
+  const [storageOK, setStorageOK] = useState(true);
+  const [mastery, setMastery] = useState(false);
   const [name, setName] = useState(() => saved("relic-riot-name", "NOVA"));
   const [color, setColor] = useState(() =>
     Math.max(0, Math.min(3, Number(saved("relic-riot-color", "0")) || 0)),
@@ -45,6 +58,16 @@ export default function App() {
   const session = useRef<GameSession | null>(null),
     audio = useRef(new GameAudio());
   audio.current.enabled = sound;
+  useEffect(() => {
+    setStorageOK(saveCareer(career));
+  }, [career]);
+  useEffect(() => {
+    if (view?.snapshot.phase === "finished") {
+      setCareer((c) =>
+        recordRound(c, view.snapshot, view.localId, view.practice),
+      );
+    }
+  }, [view]);
   useEffect(() => {
     try {
       localStorage.setItem("relic-riot-name", name);
@@ -95,9 +118,10 @@ export default function App() {
     session.current = game;
     const callsign = cleanName(name);
     setName(callsign);
-    if (mode === "host") void game.host(callsign, color);
-    else if (mode === "join") void game.join(code, callsign, color);
-    else game.practiceRun(callsign, color);
+    if (mode === "host") void game.host(callsign, color, career.equipped);
+    else if (mode === "join")
+      void game.join(code, callsign, color, career.equipped);
+    else game.practiceRun(callsign, color, career.equipped);
   };
   const leave = useCallback(() => {
     session.current?.close();
@@ -109,6 +133,7 @@ export default function App() {
     setStatus("");
   }, []);
   const closeHelp = useCallback(() => setHelp(false), []);
+  const closeMastery = useCallback(() => setMastery(false), []);
   const me = view?.snapshot.players.find((p) => p.id === view.localId);
   const ready = () => {
     if (me) session.current?.ready(!me.ready);
@@ -156,6 +181,8 @@ export default function App() {
             : window.scrollTo({ top: 0, behavior: "smooth" })
         }
         playing={inArena}
+        shards={career.shards}
+        onMastery={() => setMastery(true)}
       />
       {!view && (
         <Home
@@ -181,6 +208,8 @@ export default function App() {
           onLeave={() => setLeaveDialog(true)}
           copied={copied}
           copyInvite={() => void copyInvite()}
+          onSurge={(enabled) => session.current?.setSurge(enabled)}
+          onMessage={(key) => session.current?.message(key)}
         />
       )}
       {inArena && view && session.current && (
@@ -198,7 +227,12 @@ export default function App() {
           onReady={ready}
           onStart={() => session.current?.start()}
           onLeave={leave}
+          onMastery={() => setMastery(true)}
+          onMessage={(key) => session.current?.message(key)}
         />
+      )}
+      {view && ["playing", "countdown"].includes(view.snapshot.phase) && (
+        <Comms view={view} onSend={(key) => session.current?.message(key)} />
       )}
       {!view && <Footer />}
       {view?.snapshot.phase === "lobby" && (
@@ -207,6 +241,17 @@ export default function App() {
         </div>
       )}
       {help && <Help onClose={closeHelp} />}
+      {mastery && (
+        <Mastery
+          career={career}
+          color={color}
+          storageOK={storageOK}
+          onClose={closeMastery}
+          onClaim={(id) => setCareer((c) => claimGoal(c, id))}
+          onPurchase={(id) => setCareer((c) => purchase(c, id))}
+          onEquip={(id) => setCareer((c) => equip(c, id))}
+        />
+      )}
       {leaveDialog && (
         <LeaveDialog
           isHost={view?.isHost ?? false}

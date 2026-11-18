@@ -14,7 +14,7 @@ An original, responsive 3D online multiplayer arena game created by **Sheena Lin
 2. Choose a callsign and runner. One player selects **Create Room**.
 3. Share **Copy Invite**, or send the six-character room code.
 4. Everyone selects **I'm Ready**; the host selects **Start the Riot**.
-5. Run into the amber relic. Carry it to the active gold shrine to score. Pulse nearby rivals to knock it loose. Highest deliveries after three minutes wins; equal top scores produce a draw.
+5. Run into the amber relic. Carry it to the active shrine to score. Pulse nearby rivals to knock it loose. Highest points after three minutes wins; tied leaders share a draw. Classic deliveries earn 1 point. The host can enable **Relic Surge** before starting: deliveries in the final 30 seconds earn 2 points.
 
 **Desktop:** WASD or arrows to move; Space to pulse. A connected gamepad's left stick and first button are supported. **Phone/tablet:** left joystick and right pulse button. Sound is optional and starts only after interaction. **Practice Run** is explicitly a separate mode with the ECHO bot.
 
@@ -25,6 +25,16 @@ An original, responsive 3D online multiplayer arena game created by **Sheena Lin
 - Lobby readiness, countdown, snapshots, scoreboards and results are shared. Runners get distinct colors automatically.
 - Inputs expire if a stream stops. A departed guest is removed; if only one remains, the room returns to the lobby. Host loss gives the guest an actionable error.
 - Highest score, ties and rematches are implemented.
+
+## Make every riot count
+
+- **Round recap:** actual deliveries, steals, pulses landed, accuracy, time carrying and first-delivery time. Positive, untied statistics earn descriptive round awards.
+- **Mastery:** five cumulative challenges unlock progressively harder tiers and award virtual Relic Shards. Completed online rounds award 20 shards, +5 per delivery and +25 for a sole win. Practice and abandoned rounds award none.
+- **Wardrobe:** earn a Gilded cloak and mask, Starlight trail, or Royal crown and nameplate. These are rendered in 3D and never change movement, abilities or scoring. Equipped looks apply to the next room or practice run.
+- **Quick messages:** five presets across the lobby, arena and recap. Sender identity is bound to the connection; messages are rate limited and kept in a small recent history.
+- **Relic Surge:** opt-in final-30-second double points, shared countdown warning, warm shrine effects and an explicit HUD. Changing the option resets everyone's readiness.
+
+Career progress is **saved in this browser on this device**. No account or cross-device synchronization is claimed. Clearing browser data resets progress. Shards have no cash value and cannot be purchased with money.
 
 ## Run locally
 
@@ -38,7 +48,7 @@ npm run dev
 Open the URL Vite prints. Other devices on the same LAN can open the printed network URL. Internet games use the deployed HTTPS site.
 
 ```sh
-npm test          # deterministic simulation and protocol-boundary tests
+npm test          # deterministic simulation, rewards and progression tests
 npm run build    # TypeScript and production bundle
 npm run preview  # serve the production build locally
 ```
@@ -50,7 +60,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-An existing Chromium executable can be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. `GAME_URL` points the same tests at a deployed site. The tests create independent browser contexts, use real internet signaling, validate synchronized movement and pulses, advance the actual clock to finish a match, ready a rematch, and verify host-disconnect recovery. Browser rendering and mobile viewport tests also run. Browser emulation is not a physical-device test.
+An existing Chromium executable can be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. `GAME_URL` points the same tests at a deployed site. The tests create independent browser contexts, use real internet signaling, drive an actual pickup and delivery with keyboard input, verify the score on both clients, let the real three-minute clock finish, ready a rematch, and verify host-disconnect recovery. Browser rendering, mobile pointer controls and career transaction tests also run. The online suite takes several minutes. Browser emulation is not a physical-device test.
 
 ## Architecture
 

@@ -33,3 +33,9 @@ Browser-hosted authoritative simulation; guests send input only. PeerJS handles 
 ## Verification contract
 
 Real input and score simulation tests; two independent browser contexts use internet signaling and exchange actual WebRTC packets. Exercise lobby, readiness, countdown, movement, pickup, pulse, scoring, end, rematch and disconnect. Capture desktop and mobile screenshots, inspect concept/render, check no horizontal overflow or console errors. Physical phone/different-network testing remains separately identified if no physical second device is available.
+
+## Approved version 1.1 extension
+
+Extend the original aubergine, ivory and amber system with a compact Mastery control in the header, a portrait-led dialog with Challenges / Wardrobe / Career, and a detailed recap within the established results panel. Keep the main home composition and artwork. Phone headers use labeled icon controls so the brand and shard count remain on one line. Quick messages sit inside lobby/results panels, and above the ability controls during play. New surfaces use the same typography, outlines and corner treatments.
+
+Five cumulative challenge tracks and three earned looks add reasons to replay. Wardrobe portraits are illustrative; their labels describe the actual 3D cloak/mask, particle trail and crown/nameplate effects. No cosmetic changes gameplay. Local-device persistence is disclosed within the dialog. Relic Surge is an explicit host option with readiness reset, a warning in the last 40 seconds, a coral shrine and a double-points HUD in the final 30. Statistics and awards use actual authoritative counters, including accurate empty states.

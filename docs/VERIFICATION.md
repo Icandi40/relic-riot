@@ -1,4 +1,22 @@
-# Release verification — November 17, 2026
+# Release verification
+
+## Version 1.1 — November 18, 2026
+
+TypeScript, production build, formatting, 27 deterministic simulation/career tests and the runtime dependency audit passed locally. `NODE_USE_SYSTEM_CA=1` was used for npm to use the system trust store; certificate verification was retained. The build retains the known Three.js chunk-size advisory.
+
+Two local UI suites passed: desktop/mobile entry, instructions, real pointer joystick movement, pulse, leave, Mastery navigation, challenge claim, cosmetic purchases, persistence and all three 3D cosmetic render paths. Purchase tests use an explicitly isolated save fixture; these are not claimed as earned online progress. Fresh default career and wardrobe screenshots show empty progress and locked items.
+
+The strengthened online run used two independent contexts, real internet signaling and WebRTC. It verified readiness reset after the Surge option changed, guest read-only settings, a named guest preset on the host, actual keyboard movement, pickup and delivery, and the same score on both clients. The real three-minute clock reached Surge and results; the actual sole winner earned 50 shards (20 completion + 5 delivery + 25 win), and career totals showed one match. Both players readied and began a rematch. The final disconnect assertion was invalidated by a test-trace file collision from a second test command sharing its output directory. Production verification uses a separate output directory and is recorded below after completion.
+
+The stalled-frame input regression and immutable completed standings each have deterministic tests. The 3D renderer adapts sustained low frame rate by reducing render resolution and decorative effects. gstack inspection confirmed meaningful content, a clean application console and no horizontal overflow at 320px and 390px widths. Original concept, final home, Mastery, wardrobe, cosmetic render paths and results were opened with `view_image`.
+
+The project still needs a separately recorded physical phone-and-computer check on different networks. Device-local progress can reset when browser data is cleared; no authenticated global ranking or cross-device career is claimed. No new paid infrastructure was provisioned.
+
+### Version 1.1 public release
+
+Deployment and final isolated public browser verification are pending at this checkpoint. The version 1.0 evidence below is retained as historical evidence, not substituted for the updated build.
+
+## Version 1.0 — November 17, 2026
 
 ## Checks completed locally
 

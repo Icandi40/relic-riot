@@ -3,7 +3,7 @@ import { Simulation } from "./simulation";
 import { cleanName, validColor } from "./types";
 import type { Input, Snapshot } from "./types";
 
-const PREFIX = "relic-riot-v1-";
+const PREFIX = "relic-riot-v2-";
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const makeCode = () =>
   Array.from(
@@ -52,6 +52,7 @@ export class GameSession {
     this.peer = peer;
     peer.on("error", (err) => {
       if (this.closed) return;
+      console.warn("Room connection:", err.type);
       const message =
         err.type === "peer-unavailable"
           ? "That room is not online. Check the code and ask your host to keep the room open."
@@ -75,7 +76,7 @@ export class GameSession {
     return peer;
   }
 
-  async host(name: string, color: number) {
+  async host(name: string, color: number, cosmetic = "classic") {
     this.isHost = true;
     this.room = makeCode();
     this.callbacks.status("Opening your room…");
@@ -90,8 +91,8 @@ export class GameSession {
     peer.on("open", () => {
       if (this.closed) return;
       this.clearPending();
-      this.sim = new Simulation();
-      this.sim.addPlayer(this.localId, name, color);
+      this.sim = new Simulation(() => performance.now() / 1000);
+      this.sim.addPlayer(this.localId, name, color, false, cosmetic);
       this.startLoop();
       this.emit(this.sim.snapshot());
       this.callbacks.status("Your room is ready. Invite your crew.");
@@ -118,6 +119,8 @@ export class GameSession {
               link.peer,
               cleanName(m.name),
               validColor(m.color),
+              false,
+              m.cosmetic,
             )
           ) {
             link.send({
@@ -141,6 +144,8 @@ export class GameSession {
           this.broadcast();
         } else if (admitted && this.sim) {
           if (m.type === "input") this.sim.input(link.peer, m.value);
+          if (m.type === "message" && this.sim.message(link.peer, m.key))
+            this.broadcast();
           if (m.type === "ready") {
             this.sim.setReady(link.peer, m.value === true);
             this.broadcast();
@@ -162,7 +167,7 @@ export class GameSession {
     });
   }
 
-  async join(room: string, name: string, color: number) {
+  async join(room: string, name: string, color: number, cosmetic = "classic") {
     this.room = room.trim().toUpperCase();
     if (!/^[A-HJ-NP-Z2-9]{6}$/.test(this.room)) {
       this.fail("Enter the six-character room code from your host.");
@@ -189,6 +194,7 @@ export class GameSession {
           type: "hello",
           name: cleanName(name),
           color: validColor(color),
+          cosmetic,
         });
       });
       link.on("data", (raw) => {
@@ -227,12 +233,12 @@ export class GameSession {
     });
   }
 
-  practiceRun(name: string, color: number) {
+  practiceRun(name: string, color: number, cosmetic = "classic") {
     this.isHost = true;
     this.practice = true;
     this.room = "PRACTICE";
-    this.sim = new Simulation();
-    this.sim.addPlayer(this.localId, name, color);
+    this.sim = new Simulation(() => performance.now() / 1000);
+    this.sim.addPlayer(this.localId, name, color, false, cosmetic);
     this.sim.addPlayer("practice-bot", "ECHO · BOT", (color + 1) % 4, true);
     this.sim.setReady(this.localId, true);
     this.sim.start();
@@ -300,6 +306,14 @@ export class GameSession {
   start() {
     if (this.isHost && this.sim?.start()) this.broadcast();
   }
+  setSurge(enabled: boolean) {
+    if (this.isHost && this.sim?.setSurge(enabled)) this.broadcast();
+  }
+  message(key: string) {
+    if (this.isHost) {
+      if (this.sim?.message(this.localId, key)) this.broadcast();
+    } else this.send({ type: "message", key });
+  }
   getSnapshot() {
     return this.lastSnapshot;
   }
@@ -331,7 +345,33 @@ function validSnapshot(value: unknown): value is Snapshot {
     ["lobby", "countdown", "playing", "finished"].includes(s.phase) &&
     Array.isArray(s.players) &&
     s.players.length <= 4 &&
+    Array.isArray(s.standings) &&
+    s.standings.length <= 4 &&
     typeof s.time === "number" &&
+    Number.isFinite(s.time) &&
+    typeof s.matchId === "string" &&
+    typeof s.surge === "boolean" &&
+    Array.isArray(s.messages) &&
+    s.messages.length <= 8 &&
+    s.messages.every(
+      (m) =>
+        m &&
+        typeof m.text === "string" &&
+        typeof m.name === "string" &&
+        typeof m.playerId === "string" &&
+        Number.isFinite(m.at),
+    ) &&
+    [...s.players, ...s.standings].every(
+      (p) =>
+        p &&
+        typeof p.id === "string" &&
+        typeof p.name === "string" &&
+        Number.isFinite(p.x) &&
+        Number.isFinite(p.z) &&
+        p.stats &&
+        Number.isFinite(p.stats.pulses) &&
+        Number.isFinite(p.stats.carrySeconds),
+    ) &&
     Array.isArray(s.events)
   );
 }

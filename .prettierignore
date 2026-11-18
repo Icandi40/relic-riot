@@ -1,8 +1,9 @@
-node_modules
-dist
-test-results
-playwright-report
-public/art
-design
-docs/screenshots
+work/
+dist/
+node_modules/
+test-results/
+playwright-report/
+public/art/
+design/
+docs/screenshots/
 *.tsbuildinfo
